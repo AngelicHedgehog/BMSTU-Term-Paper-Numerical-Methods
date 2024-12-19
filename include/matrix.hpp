@@ -12,7 +12,7 @@ private:
     std::size_t cols;
 
 public:
-    Matrix(std::size_t rows, std::size_t cols, double init_value = 0.0);
+    Matrix(std::size_t rows = 0, std::size_t cols = 0, double init_value = 0.0);
     Matrix(const std::vector<std::vector<double>>& input_data);
 
     auto getRows() const -> std::size_t;
@@ -29,6 +29,7 @@ public:
     auto operator+(const Matrix& other) const -> Matrix;
     auto operator-(const Matrix& other) const -> Matrix;
     auto operator*(const Matrix& other) const -> Matrix;
+    auto operator/(double k) const -> Matrix;
 
     auto qrDecomposition() const -> std::pair<Matrix, Matrix>;
     auto eigenvaluesAndVectors(std::size_t max_iterations = 1000, double tolerance = 1e-9) const -> std::pair<std::vector<double>, Matrix>;

@@ -134,6 +134,18 @@ auto Matrix::operator*(const Matrix& other) const -> Matrix {
     return result;
 }
 
+auto Matrix::operator/(double k) const -> Matrix {
+    Matrix result = *this;
+
+    for (auto& row : result.data) {
+        for (auto& element : row) {
+            element /= k;
+        }
+    }
+
+    return result;
+}
+
 auto Matrix::qrDecomposition() const -> std::pair<Matrix, Matrix> {
     if (rows != cols) {
         throw std::invalid_argument("QR-разложение возможно только для квадратных матриц");
