@@ -219,15 +219,15 @@ auto Matrix::eigenvaluesAndVectors(std::size_t max_iterations, double tolerance)
 }
 
 auto Matrix::svdDecomposition(std::size_t max_iterations, double tolerance) const -> std::tuple<Matrix, Matrix, Matrix> {
-    Matrix AAT = (*this) * this->transpose(); // A * A^T
-    Matrix ATA = this->transpose() * (*this); // A^T * A
+    Matrix AAT = (*this) * this->transpose();
+    Matrix ATA = this->transpose() * (*this);
 
     auto [left_eigenvalues, U] = AAT.eigenvaluesAndVectors(max_iterations, tolerance);
     auto [right_eigenvalues, V] = ATA.eigenvaluesAndVectors(max_iterations, tolerance);
 
     Matrix Sigma(rows, cols, 0.0);
 
-    for (size_t i = 0; i < std::min(rows, cols); ++i) {
+    for (std::size_t i = 0; i != std::min(rows, cols); ++i) {
         Sigma.at(i, i) = std::sqrt(left_eigenvalues[i]);
     }
 

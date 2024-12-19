@@ -2,46 +2,79 @@
 #include <limits>
 
 #include "classifier.hpp"
+#include "utils.hpp"
 
 
-auto classify(const Matrix& image, const std::vector<Matrix>& class_centers) -> std::size_t {
-    auto [U, S, V] = image.svdDecomposition();
-    Matrix F_new = U * S;
+auto classify(const Matrix& image, const std::unordered_map<std::size_t, Matrix>& classCenters) -> std::size_t {
+    const std::size_t k = classCenters.at(0).getCols();
+    auto [U, Sigma, V] = image.svdDecomposition();
+    
+    std::vector<double> singularValues;
+    for (std::size_t j = 0; j != image.getCols(); ++j) {
+        singularValues.push_back(image.at(j, j));
+    }
+    auto maxKSingularIndexes = findTopKIndices(singularValues, k);
 
-    double min_distance = std::numeric_limits<double>::max();
-    std::size_t best_class = 0;
+    Matrix U_k(U.getRows(), k);
+    Matrix Sigma_k(k, k);
+    for (std::size_t j = 0; j != k; ++j) {
+        for (std::size_t r = 0; r != U.getRows(); ++r) {
+            U_k.at(r, j) = U.at(r, maxKSingularIndexes[j]);
+        }
+        Sigma_k.at(j, j) = Sigma.at(maxKSingularIndexes[j], maxKSingularIndexes[j]);
+    }
 
-    for (size_t i = 0; i != class_centers.size(); ++i) {
-        double distance = (F_new - class_centers[i]).frobeniusNorm();
-        if (distance < min_distance) {
-            min_distance = distance;
-            best_class = i;
+    Matrix Fnew = U_k * Sigma_k;
+
+    double minDistance;
+    std::size_t bestClass = 10;
+
+    for (const auto& [label, classCenter] : classCenters) {
+        double distance = (Fnew - classCenter).frobeniusNorm();
+        if (bestClass == 10 || distance < minDistance) {
+            minDistance = distance;
+            bestClass = label;
         }
     }
 
-    return best_class;
+    return bestClass;
 }
 
-auto computeClassCenters(const std::vector<Matrix>& training_data, const std::vector<std::size_t>& labels) -> std::unordered_map<std::size_t, Matrix> {
-    // const std::size_t k = 12;
+auto computeClassCenters(const std::vector<Matrix>& trainingData, const std::vector<std::size_t>& labels, std::size_t k)
+    -> std::unordered_map<std::size_t, Matrix> {
 
-    std::unordered_map<std::size_t, std::vector<Matrix>> class_features;
-    for (std::size_t i = 0; i != training_data.size(); ++i) {
-        auto [U, S, V] = training_data[i].svdDecomposition();
-        Matrix feature_vector = U * S;
-        class_features[labels[i]].push_back(feature_vector);
-    }
+    std::unordered_map<std::size_t, std::vector<Matrix>> classFeatures;
+    for (std::size_t i = 0; i != trainingData.size(); ++i) {
+        auto [U, Sigma, V] = trainingData[i].svdDecomposition();
+        
+        std::vector<double> singularValues;
+        for (std::size_t j = 0; j != trainingData[i].getCols(); ++j) {
+            singularValues.push_back(trainingData[i].at(j, j));
+        }
+        auto maxKSingularIndexes = findTopKIndices(singularValues, k);
 
-    std::unordered_map<std::size_t, Matrix> class_centers;
-    for (const auto& [label, features] : class_features) {
-        Matrix mean_vector(features[0].getRows(), features[0].getCols(), 0.0);
-
-        for (const auto& feature : features) {
-            mean_vector = mean_vector + feature;
+        Matrix U_k(U.getRows(), k);
+        Matrix Sigma_k(k, k);
+        for (std::size_t j = 0; j != k; ++j) {
+            for (std::size_t r = 0; r != U.getRows(); ++r) {
+                U_k.at(r, j) = U.at(r, maxKSingularIndexes[j]);
+            }
+            Sigma_k.at(j, j) = Sigma.at(maxKSingularIndexes[j], maxKSingularIndexes[j]);
         }
 
-        class_centers[label] = mean_vector / features.size();
+        classFeatures[labels[i]].emplace_back(U_k * Sigma_k);
     }
 
-    return class_centers;
+    std::unordered_map<std::size_t, Matrix> classCenters;
+    for (const auto& [label, features] : classFeatures) {
+        Matrix meanVector(features[0].getRows(), features[0].getCols(), 0.0);
+
+        for (const auto& feature : features) {
+            meanVector = meanVector + feature;
+        }
+
+        classCenters[label] = meanVector / features.size();
+    }
+
+    return classCenters;
 }
