@@ -4,12 +4,18 @@
 
 int main() {
 
-    Matrix m(2, 3, -1);
+    Matrix m(3, 3, 1);
 
     m.at(0, 0) = 1.5;
-    m.at(1, 2) = 100.001;
+    m.at(2, 2) = 100;
 
-    std::cout << m * m.transpose() << '\n';
+    auto [U, S, V] = m.svdDecomposition();
+
+    std::cout << U << '\n';
+    std::cout << S << '\n';
+    std::cout << V << '\n';
+
+    std::cout << (m - U * S * V.transpose()).frobeniusNorm() << '\n';
 
     return 0;
 }
